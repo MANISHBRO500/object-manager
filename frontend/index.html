@@ -150,7 +150,7 @@ button:hover {
     const API_URL = "https://object-manager.onrender.com/api/objects";
 
     async function fetchObjects() {
-      const res = await fetch(API_URL);
+      const res = await fetch(https://object-manager.onrender.com);
       const data = await res.json();
       renderTable(data);
     }
@@ -200,7 +200,7 @@ button:hover {
     }
 
     async function updateObject(id, updatedData) {
-      await fetch(`${API_URL}/${id}`, {
+      await fetch(`${https://object-manager.onrender.com}/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData)
@@ -209,7 +209,7 @@ button:hover {
     }
 
     async function deleteObject(id) {
-      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      await fetch(`${https://object-manager.onrender.com}/${id}`, { method: "DELETE" });
       fetchObjects();
     }
 
@@ -219,6 +219,7 @@ button:hover {
 
 </body>
 </html>
+
 
 
 
