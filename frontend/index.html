@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Object Manager</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f4f4f9; }
+    h1 { text-align: center; margin-bottom: 20px; }
+    .total { font-size: 20px; font-weight: bold; margin-bottom: 20px; text-align: center; }
+    .form-container { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+    input { padding: 5px; border: 1px solid #ccc; border-radius: 5px; }
+    button { padding: 6px 12px; border: none; border-radius: 5px; cursor: pointer; background: #007bff; color: white; }
+    button:hover { background: #0056b3; }
+    table { width: 100%; border-collapse: collapse; background: white; }
+    th, td { padding: 10px; text-align: center; border: 1px solid #ddd; }
+    .delete-btn { background: #dc3545; }
+    .delete-btn:hover { background: #a71d2a; }
+  </style>
+</head>
+<body>
+
+  <h1>Object Manager</h1>
+  <div class="total">Total: ₹0</div>
+
+  <div class="form-container">
+    <input type="text" id="name" placeholder="Object Name">
+    <input type="number" id="price" placeholder="Price" min="1">
+    <input type="number" id="quantity" placeholder="Quantity" min="1" value="1">
+    <button onclick="addObject()">Add</button>
+  </div>
+
+  <table id="objectTable">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Price (₹)</th>
+        <th>Quantity</th>
+        <th>Total (₹)</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+    const API_URL = "http://localhost:5000/api/objects";
+
+    async function fetchObjects() {
+      const res = await fetch(API_URL);
+      const data = await res.json();
+      renderTable(data);
+    }
+
+    function updateTotal(objects) {
+      let total = objects.reduce((sum, obj) => sum + obj.price * obj.quantity, 0);
+      document.querySelector(".total").innerText = "Total: ₹" + total;
+    }
+
+    function renderTable(objects) {
+      const tbody = document.querySelector("#objectTable tbody");
+      tbody.innerHTML = "";
+      objects.forEach((obj) => {
+        let row = `<tr>
+          <td contenteditable="true" onblur="updateObject('${obj._id}', {name: this.innerText, price: ${obj.price}, quantity: ${obj.quantity}})">${obj.name}</td>
+          <td contenteditable="true" onblur="updateObject('${obj._id}', {name: '${obj.name}', price: this.innerText, quantity: ${obj.quantity}})">${obj.price}</td>
+          <td contenteditable="true" onblur="updateObject('${obj._id}', {name: '${obj.name}', price: ${obj.price}, quantity: this.innerText})">${obj.quantity}</td>
+          <td>₹${obj.price * obj.quantity}</td>
+          <td><button class="delete-btn" onclick="deleteObject('${obj._id}')">Delete</button></td>
+        </tr>`;
+        tbody.innerHTML += row;
+      });
+      updateTotal(objects);
+    }
+
+    async function addObject() {
+      const name = document.getElementById("name").value;
+      const price = parseFloat(document.getElementById("price").value);
+      const quantity = parseInt(document.getElementById("quantity").value);
+
+      if (!name || isNaN(price) || isNaN(quantity)) {
+        alert("Please enter valid details!");
+        return;
+      }
+
+      await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, price, quantity })
+      });
+
+      document.getElementById("name").value = "";
+      document.getElementById("price").value = "";
+      document.getElementById("quantity").value = 1;
+
+      fetchObjects();
+    }
+
+    async function updateObject(id, updatedData) {
+      await fetch(`${API_URL}/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updatedData)
+      });
+      fetchObjects();
+    }
+
+    async function deleteObject(id) {
+      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+      fetchObjects();
+    }
+
+    // Load data on start
+    fetchObjects();
+  </script>
+
+</body>
+</html>
