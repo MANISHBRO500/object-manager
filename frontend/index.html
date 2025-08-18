@@ -146,78 +146,98 @@ button:hover {
   </table>
 
   <script>
-    const API_URL = "https://object-manager.onrender.com/api/objects";
+  const API_URL = "https://object-manager.onrender.com/api/objects";
 
-    // ✅ FIX: Added API_URL here
-    async function fetchObjects() {
+  async function fetchObjects() {
+    try {
       const res = await fetch(API_URL);
       const data = await res.json();
       renderTable(data);
+    } catch (err) {
+      console.error("Error fetching objects:", err);
+    }
+  }
+
+  function updateTotal(objects) {
+    let total = objects.reduce((sum, obj) => sum + (Number(obj.price) * Number(obj.quantity)), 0);
+    document.querySelector(".total").innerText = "Total: ₹" + total;
+  }
+
+  function renderTable(objects) {
+    const tbody = document.querySelector("#objectTable tbody");
+    tbody.innerHTML = "";
+
+    objects.forEach((obj) => {
+      let row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td contenteditable="true" 
+            onblur="updateObject('${obj._id}', {name: this.innerText, price: ${Number(obj.price)}, quantity: ${Number(obj.quantity)}})">
+            ${obj.name}
+        </td>
+        <td contenteditable="true" 
+            onblur="updateObject('${obj._id}', {name: '${obj.name}', price: Number(this.innerText), quantity: ${Number(obj.quantity)}})">
+            ${obj.price}
+        </td>
+        <td contenteditable="true" 
+            onblur="updateObject('${obj._id}', {name: '${obj.name}', price: ${Number(obj.price)}, quantity: Number(this.innerText)})">
+            ${obj.quantity}
+        </td>
+        <td>₹${Number(obj.price) * Number(obj.quantity)}</td>
+        <td><button class="delete-btn" onclick="deleteObject('${obj._id}')">Delete</button></td>
+      `;
+
+      tbody.appendChild(row);
+    });
+
+    updateTotal(objects);
+  }
+
+  async function addObject() {
+    const name = document.getElementById("name").value.trim();
+    const price = parseFloat(document.getElementById("price").value);
+    const quantity = parseInt(document.getElementById("quantity").value);
+
+    if (!name || isNaN(price) || isNaN(quantity)) {
+      alert("Please enter valid details!");
+      return;
     }
 
-    function updateTotal(objects) {
-      let total = objects.reduce((sum, obj) => sum + obj.price * obj.quantity, 0);
-      document.querySelector(".total").innerText = "Total: ₹" + total;
-    }
+    await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, price, quantity })
+    });
 
-    function renderTable(objects) {
-      const tbody = document.querySelector("#objectTable tbody");
-      tbody.innerHTML = "";
-      objects.forEach((obj) => {
-        let row = `<tr>
-          <td contenteditable="true" onblur="updateObject('${obj._id}', {name: this.innerText, price: ${obj.price}, quantity: ${obj.quantity}})">${obj.name}</td>
-          <td contenteditable="true" onblur="updateObject('${obj._id}', {name: '${obj.name}', price: this.innerText, quantity: ${obj.quantity}})">${obj.price}</td>
-          <td contenteditable="true" onblur="updateObject('${obj._id}', {name: '${obj.name}', price: ${obj.price}, quantity: this.innerText})">${obj.quantity}</td>
-          <td>₹${obj.price * obj.quantity}</td>
-          <td><button class="delete-btn" onclick="deleteObject('${obj._id}')">Delete</button></td>
-        </tr>`;
-        tbody.innerHTML += row;
-      });
-      updateTotal(objects);
-    }
+    document.getElementById("name").value = "";
+    document.getElementById("price").value = "";
+    document.getElementById("quantity").value = 1;
 
-    async function addObject() {
-      const name = document.getElementById("name").value;
-      const price = parseFloat(document.getElementById("price").value);
-      const quantity = parseInt(document.getElementById("quantity").value);
-
-      if (!name || isNaN(price) || isNaN(quantity)) {
-        alert("Please enter valid details!");
-        return;
-      }
-
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, price, quantity })
-      });
-
-      document.getElementById("name").value = "";
-      document.getElementById("price").value = "";
-      document.getElementById("quantity").value = 1;
-
-      fetchObjects();
-    }
-
-    // ✅ FIX: corrected template literal usage
-    async function updateObject(id, updatedData) {
-      await fetch(`${API_URL}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updatedData)
-      });
-      fetchObjects();
-    }
-
-    // ✅ FIX: corrected delete API URL
-    async function deleteObject(id) {
-      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      fetchObjects();
-    }
-
-    // Load data on start
     fetchObjects();
-  </script>
+  }
 
+  async function updateObject(id, updatedData) {
+    // Convert all numeric fields safely
+    if (updatedData.price) updatedData.price = Number(updatedData.price);
+    if (updatedData.quantity) updatedData.quantity = Number(updatedData.quantity);
+
+    await fetch(`${API_URL}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updatedData)
+    });
+
+    fetchObjects();
+  }
+
+  async function deleteObject(id) {
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    fetchObjects();
+  }
+
+  // Load data on start
+  fetchObjects();
+</script>
 </body>
 </html>
+
