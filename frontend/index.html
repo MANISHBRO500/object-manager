@@ -145,65 +145,68 @@ button:hover {
     <tbody></tbody>
   </table>
 
-  <script>
-  const API_URL = "https://object-manager.onrender.com/api/objects";
-
+<script>
+  // Fetch all objects
   async function fetchObjects() {
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch("https://object-manager.onrender.com/api/objects");
       const data = await res.json();
       renderTable(data);
     } catch (err) {
-      console.error("Error fetching objects:", err);
+      console.error("❌ Fetch error:", err);
     }
   }
 
+  // Update total
   function updateTotal(objects) {
     let total = objects.reduce((sum, obj) => sum + (Number(obj.price) * Number(obj.quantity)), 0);
     document.querySelector(".total").innerText = "Total: ₹" + total;
   }
 
+  // Render table
   function renderTable(objects) {
     const tbody = document.querySelector("#objectTable tbody");
     tbody.innerHTML = "";
 
     objects.forEach((obj) => {
-      let row = document.createElement("tr");
-
-      row.innerHTML = `
-        <td contenteditable="true" 
-            onblur="updateObject('${obj._id}', {name: this.innerText, price: ${Number(obj.price)}, quantity: ${Number(obj.quantity)}})">
-            ${obj.name}
-        </td>
-        <td contenteditable="true" 
-            onblur="updateObject('${obj._id}', {name: '${obj.name}', price: Number(this.innerText), quantity: ${Number(obj.quantity)}})">
-            ${obj.price}
-        </td>
-        <td contenteditable="true" 
-            onblur="updateObject('${obj._id}', {name: '${obj.name}', price: ${Number(obj.price)}, quantity: Number(this.innerText)})">
-            ${obj.quantity}
-        </td>
-        <td>₹${Number(obj.price) * Number(obj.quantity)}</td>
-        <td><button class="delete-btn" onclick="deleteObject('${obj._id}')">Delete</button></td>
+      let row = `
+        <tr>
+          <td contenteditable="true" 
+              onblur="updateObject('${obj._id}', {name: this.innerText, price: ${Number(obj.price)}, quantity: ${Number(obj.quantity)}})">
+              ${obj.name}
+          </td>
+          <td contenteditable="true" 
+              onblur="updateObject('${obj._id}', {name: '${obj.name}', price: Number(this.innerText), quantity: ${Number(obj.quantity)}})">
+              ${obj.price}
+          </td>
+          <td contenteditable="true" 
+              onblur="updateObject('${obj._id}', {name: '${obj.name}', price: ${Number(obj.price)}, quantity: Number(this.innerText)})">
+              ${obj.quantity}
+          </td>
+          <td>₹${Number(obj.price) * Number(obj.quantity)}</td>
+          <td>
+            <button class="delete-btn" onclick="deleteObject('${obj._id}')">🗑 Delete</button>
+          </td>
+        </tr>
       `;
-
-      tbody.appendChild(row);
+      tbody.innerHTML += row;
     });
 
     updateTotal(objects);
   }
 
+  // Add new object
   async function addObject() {
     const name = document.getElementById("name").value.trim();
     const price = parseFloat(document.getElementById("price").value);
     const quantity = parseInt(document.getElementById("quantity").value);
 
     if (!name || isNaN(price) || isNaN(quantity)) {
-      alert("Please enter valid details!");
+      alert("⚠ Please enter valid details!");
       return;
     }
 
-    await fetch(API_URL, {
+    await fetch("https://object-manager.onrender.com/api/objects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ name, price, quantity })
@@ -216,12 +219,12 @@ button:hover {
     fetchObjects();
   }
 
+  // Update object
   async function updateObject(id, updatedData) {
-    // Convert all numeric fields safely
-    if (updatedData.price) updatedData.price = Number(updatedData.price);
-    if (updatedData.quantity) updatedData.quantity = Number(updatedData.quantity);
+    updatedData.price = Number(updatedData.price);
+    updatedData.quantity = Number(updatedData.quantity);
 
-    await fetch(`${API_URL}/${id}`, {
+    await fetch(`https://object-manager.onrender.com/api/objects/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updatedData)
@@ -230,14 +233,21 @@ button:hover {
     fetchObjects();
   }
 
+  // Delete object
   async function deleteObject(id) {
-    await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+    if (!confirm("❓ Are you sure you want to delete this item?")) return;
+
+    await fetch(`https://object-manager.onrender.com/api/objects/${id}`, {
+      method: "DELETE"
+    });
+
     fetchObjects();
   }
 
-  // Load data on start
+  // Initial load
   fetchObjects();
 </script>
 </body>
 </html>
+
 
