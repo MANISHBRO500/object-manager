@@ -5,8 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Object Manager</title>
   <style>
-    /* General Reset */
-* {
+    * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
@@ -149,8 +148,9 @@ button:hover {
   <script>
     const API_URL = "https://object-manager.onrender.com/api/objects";
 
+    // ✅ FIX: Added API_URL here
     async function fetchObjects() {
-      const res = await fetch();
+      const res = await fetch(API_URL);
       const data = await res.json();
       renderTable(data);
     }
@@ -186,7 +186,7 @@ button:hover {
         return;
       }
 
-      await fetch( API_URL, {
+      await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, price, quantity })
@@ -199,8 +199,9 @@ button:hover {
       fetchObjects();
     }
 
+    // ✅ FIX: corrected template literal usage
     async function updateObject(id, updatedData) {
-      await fetch(`${https://object-manager.onrender.com}/${id}`, {
+      await fetch(`${API_URL}/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedData)
@@ -208,8 +209,9 @@ button:hover {
       fetchObjects();
     }
 
+    // ✅ FIX: corrected delete API URL
     async function deleteObject(id) {
-      await fetch(`${https://object-manager.onrender.com}/${id}`, { method: "DELETE" });
+      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
       fetchObjects();
     }
 
@@ -219,11 +221,3 @@ button:hover {
 
 </body>
 </html>
-
-
-
-
-
-
-
-
