@@ -3,29 +3,25 @@
 <head>
   <meta charset="UTF-8">
   <title>Object Manager</title>
-  <style>
-    table, th, td { border: 1px solid black; border-collapse: collapse; padding: 6px; }
-  </style>
 </head>
 <body>
   <h1>Object Manager</h1>
 
-  <h2>Add Object</h2>
-  <input type="text" id="name" placeholder="Name">
-  <input type="number" id="price" placeholder="Price">
-  <input type="number" id="quantity" placeholder="Quantity" value="1">
-  <button onclick="addObject()">Add</button>
+  <form id="objectForm">
+    <input type="text" id="name" placeholder="Name" required />
+    <input type="number" id="price" placeholder="Price" required />
+    <input type="number" id="quantity" placeholder="Quantity" required />
+    <button type="submit">Add Object</button>
+  </form>
 
-  <h2>Objects</h2>
-  <table>
+  <table border="1">
     <thead>
       <tr>
         <th>Name</th>
         <th>Price</th>
         <th>Quantity</th>
         <th>Total</th>
-        <th>Edit</th>
-        <th>Delete</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody id="objectTable"></tbody>
@@ -34,81 +30,120 @@
   <script>
     const API_URL = "https://object-manager.onrender.com/api/objects";
 
-    // Load objects
-    async function loadObjects() {
+    async function fetchObjects() {
       const res = await fetch(API_URL);
-      const objects = await res.json();
+      const data = await res.json();
+      renderTable(data);
+    }
 
+    function renderTable(objects) {
       const table = document.getElementById("objectTable");
       table.innerHTML = "";
 
       objects.forEach(obj => {
         const row = document.createElement("tr");
-        const total = (obj.price || 0) * (obj.quantity || 0);
 
-        row.innerHTML = `
-          <td>${obj.name}</td>
-          <td>${obj.price}</td>
-          <td>${obj.quantity}</td>
-          <td>${total}</td>
-          <td><button onclick="editObject('${obj._id}')">Edit</button></td>
-          <td><button onclick="deleteObject('${obj._id}')">Delete</button></td>
-        `;
+        // Editable name
+        const nameCell = document.createElement("td");
+        nameCell.contentEditable = true;
+        nameCell.innerText = obj.name;
+        row.appendChild(nameCell);
+
+        // Editable price
+        const priceCell = document.createElement("td");
+        priceCell.contentEditable = true;
+        priceCell.innerText = obj.price;
+        row.appendChild(priceCell);
+
+        // Editable quantity
+        const qtyCell = document.createElement("td");
+        qtyCell.contentEditable = true;
+        qtyCell.innerText = obj.quantity;
+        row.appendChild(qtyCell);
+
+        // Total = price * qty
+        const totalCell = document.createElement("td");
+        totalCell.innerText = obj.price * obj.quantity;
+        row.appendChild(totalCell);
+
+        // Actions
+        const actionsCell = document.createElement("td");
+
+        // Save button
+        const saveBtn = document.createElement("button");
+        saveBtn.innerText = "Save";
+        saveBtn.onclick = async () => {
+          await updateObject(obj._id, {
+            name: nameCell.innerText,
+            price: Number(priceCell.innerText),
+            quantity: Number(qtyCell.innerText)
+          });
+        };
+        actionsCell.appendChild(saveBtn);
+
+        // Delete button
+        const deleteBtn = document.createElement("button");
+        deleteBtn.innerText = "Delete";
+        deleteBtn.onclick = async () => {
+          await deleteObject(obj._id);
+        };
+        actionsCell.appendChild(deleteBtn);
+
+        row.appendChild(actionsCell);
+
         table.appendChild(row);
       });
     }
 
-    // Add new object
-    async function addObject() {
+    async function addObject(newObj) {
+      const res = await fetch(API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newObj)
+      });
+      await fetchObjects();
+    }
+
+    async function updateObject(id, updatedObj) {
+      try {
+        const res = await fetch(`${API_URL}/${id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updatedObj)
+        });
+        if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
+        await fetchObjects();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function deleteObject(id) {
+      try {
+        const res = await fetch(`${API_URL}/${id}`, {
+          method: "DELETE"
+        });
+        if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);
+        await fetchObjects();
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    // Handle form submit
+    document.getElementById("objectForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
       const name = document.getElementById("name").value;
       const price = Number(document.getElementById("price").value);
       const quantity = Number(document.getElementById("quantity").value);
 
-      if (!name || isNaN(price) || isNaN(quantity)) {
-        alert("Please fill all fields correctly");
-        return;
-      }
+      await addObject({ name, price, quantity });
 
-      await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, price, quantity })
-      });
+      e.target.reset();
+    });
 
-      document.getElementById("name").value = "";
-      document.getElementById("price").value = "";
-      document.getElementById("quantity").value = 1;
-
-      loadObjects();
-    }
-
-    // Delete object
-    async function deleteObject(id) {
-      await fetch(`${API_URL}/${id}`, { method: "DELETE" });
-      loadObjects();
-    }
-
-    // Edit object
-    async function editObject(id) {
-      const newName = prompt("Enter new name:");
-      const newPrice = Number(prompt("Enter new price:"));
-      const newQuantity = Number(prompt("Enter new quantity:"));
-
-      if (!newName || isNaN(newPrice) || isNaN(newQuantity)) {
-        alert("Invalid input!");
-        return;
-      }
-
-      await fetch(`${API_URL}/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newName, price: newPrice, quantity: newQuantity })
-      });
-
-      loadObjects();
-    }
-
-    loadObjects();
+    // Load data on page load
+    fetchObjects();
   </script>
 </body>
 </html>
