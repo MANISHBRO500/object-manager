@@ -28,122 +28,97 @@
   </table>
 
   <script>
-    const API_URL = "https://object-manager.onrender.com/api/objects";
+   const API_URL = "https://object-manager.onrender.com/api/objects"; 
 
-    async function fetchObjects() {
-      const res = await fetch(API_URL);
-      const data = await res.json();
-      renderTable(data);
-    }
+// Fetch all objects
+async function fetchObjects() {
+  const res = await fetch(API_URL);
+  const data = await res.json();
 
-    function renderTable(objects) {
-      const table = document.getElementById("objectTable");
-      table.innerHTML = "";
+  const tableBody = document.querySelector("#objectTable tbody");
+  tableBody.innerHTML = "";
 
-      objects.forEach(obj => {
-        const row = document.createElement("tr");
+  data.forEach(obj => {
+    const row = document.createElement("tr");
 
-        // Editable name
-        const nameCell = document.createElement("td");
-        nameCell.contentEditable = true;
-        nameCell.innerText = obj.name;
-        row.appendChild(nameCell);
+    row.innerHTML = `
+      <td contenteditable="true" data-id="${obj._id}" data-field="name">${obj.name}</td>
+      <td contenteditable="true" data-id="${obj._id}" data-field="price">${obj.price}</td>
+      <td contenteditable="true" data-id="${obj._id}" data-field="quantity">${obj.quantity}</td>
+      <td><button onclick="deleteObject('${obj._id}')">Delete</button></td>
+    `;
 
-        // Editable price
-        const priceCell = document.createElement("td");
-        priceCell.contentEditable = true;
-        priceCell.innerText = obj.price;
-        row.appendChild(priceCell);
-
-        // Editable quantity
-        const qtyCell = document.createElement("td");
-        qtyCell.contentEditable = true;
-        qtyCell.innerText = obj.quantity;
-        row.appendChild(qtyCell);
-
-        // Total = price * qty
-        const totalCell = document.createElement("td");
-        totalCell.innerText = obj.price * obj.quantity;
-        row.appendChild(totalCell);
-
-        // Actions
-        const actionsCell = document.createElement("td");
-
-        // Save button
-        const saveBtn = document.createElement("button");
-        saveBtn.innerText = "Save";
-        saveBtn.onclick = async () => {
-          await updateObject(obj._id, {
-            name: nameCell.innerText,
-            price: Number(priceCell.innerText),
-            quantity: Number(qtyCell.innerText)
-          });
-        };
-        actionsCell.appendChild(saveBtn);
-
-        // Delete button
-        const deleteBtn = document.createElement("button");
-        deleteBtn.innerText = "Delete";
-        deleteBtn.onclick = async () => {
-          await deleteObject(obj._id);
-        };
-        actionsCell.appendChild(deleteBtn);
-
-        row.appendChild(actionsCell);
-
-        table.appendChild(row);
-      });
-    }
-
-    async function addObject(newObj) {
-      const res = await fetch(API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newObj)
-      });
-      await fetchObjects();
-    }
-
-    async function updateObject(id, updatedObj) {
-      try {
-        const res = await fetch(`${API_URL}/${id}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(updatedObj)
-        });
-        if (!res.ok) throw new Error(`PUT failed: ${res.status}`);
-        await fetchObjects();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    async function deleteObject(id) {
-      try {
-        const res = await fetch(`${API_URL}/${id}`, {
-          method: "DELETE"
-        });
-        if (!res.ok) throw new Error(`DELETE failed: ${res.status}`);
-        await fetchObjects();
-      } catch (err) {
-        console.error(err);
-      }
-    }
-
-    // Handle form submit
-    document.getElementById("objectForm").addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const name = document.getElementById("name").value;
-      const price = Number(document.getElementById("price").value);
-      const quantity = Number(document.getElementById("quantity").value);
-
-      await addObject({ name, price, quantity });
-
-      e.target.reset();
+    // Save changes when cell loses focus
+    row.querySelectorAll("[contenteditable]").forEach(cell => {
+      cell.addEventListener("blur", saveIfChanged);
     });
 
-    // Load data on page load
-    fetchObjects();
+    tableBody.appendChild(row);
+  });
+}
+
+// Save edited cell value
+async function saveIfChanged(event) {
+  const cell = event.target;
+  const id = cell.dataset.id;
+  const field = cell.dataset.field;
+  const newValue = cell.innerText;
+
+  try {
+    const res = await fetch(`${API_URL}/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: newValue })
+    });
+
+    if (!res.ok) throw new Error("PUT failed: " + res.status);
+    console.log("Updated:", field, "=", newValue);
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Delete object
+async function deleteObject(id) {
+  try {
+    const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+
+    if (!res.ok) throw new Error("DELETE failed: " + res.status);
+    console.log("Deleted:", id);
+
+    fetchObjects(); // Refresh list
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Add new object
+document.getElementById("objectForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  const name = document.getElementById("name").value;
+  const price = document.getElementById("price").value;
+  const quantity = document.getElementById("quantity").value;
+
+  try {
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name, price, quantity })
+    });
+
+    if (!res.ok) throw new Error("POST failed: " + res.status);
+
+    document.getElementById("objectForm").reset();
+    fetchObjects(); // Refresh
+  } catch (err) {
+    console.error(err);
+  }
+});
+
+// Initial fetch
+fetchObjects();
+
   </script>
 </body>
 </html>
+
