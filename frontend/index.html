@@ -28,97 +28,90 @@
   </table>
 
   <script>
-   const API_URL = "https://object-manager.onrender.com/api/objects"; 
-
-// Fetch all objects
+   // ✅ Fetch and display all objects
 async function fetchObjects() {
-  const res = await fetch(API_URL);
-  const data = await res.json();
-
-  const tableBody = document.querySelector("#objectTable tbody");
-  tableBody.innerHTML = "";
-
-  data.forEach(obj => {
-    const row = document.createElement("tr");
-
-    row.innerHTML = `
-      <td contenteditable="true" data-id="${obj._id}" data-field="name">${obj.name}</td>
-      <td contenteditable="true" data-id="${obj._id}" data-field="price">${obj.price}</td>
-      <td contenteditable="true" data-id="${obj._id}" data-field="quantity">${obj.quantity}</td>
-      <td><button onclick="deleteObject('${obj._id}')">Delete</button></td>
-    `;
-
-    // Save changes when cell loses focus
-    row.querySelectorAll("[contenteditable]").forEach(cell => {
-      cell.addEventListener("blur", saveIfChanged);
-    });
-
-    tableBody.appendChild(row);
-  });
-}
-
-// Save edited cell value
-async function saveIfChanged(event) {
-  const cell = event.target;
-  const id = cell.dataset.id;
-  const field = cell.dataset.field;
-  const newValue = cell.innerText;
-
   try {
-    const res = await fetch(`${API_URL}/${id}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ [field]: newValue })
-    });
+    const res = await fetch("https://object-manager.onrender.com/api/objects");
+    const data = await res.json();
 
-    if (!res.ok) throw new Error("PUT failed: " + res.status);
-    console.log("Updated:", field, "=", newValue);
+    const tableBody = document.getElementById("objectTableBody");
+    tableBody.innerHTML = "";
+
+    data.forEach(obj => {
+      const row = document.createElement("tr");
+
+      row.innerHTML = `
+        <td contenteditable="true" onblur="updateObject('${obj._id}', 'name', this.innerText)">${obj.name}</td>
+        <td contenteditable="true" onblur="updateObject('${obj._id}', 'price', this.innerText)">${obj.price}</td>
+        <td>
+          <button onclick="deleteObject('${obj._id}')">🗑 Delete</button>
+        </td>
+      `;
+      tableBody.appendChild(row);
+    });
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching objects:", err);
   }
 }
 
-// Delete object
-async function deleteObject(id) {
-  try {
-    const res = await fetch(`${API_URL}/${id}`, { method: "DELETE" });
+// ✅ Add new object
+async function addObject() {
+  const name = document.getElementById("nameInput").value.trim();
+  const price = document.getElementById("priceInput").value.trim();
 
-    if (!res.ok) throw new Error("DELETE failed: " + res.status);
-    console.log("Deleted:", id);
-
-    fetchObjects(); // Refresh list
-  } catch (err) {
-    console.error(err);
+  if (!name || !price) {
+    alert("⚠ Please enter both name and price.");
+    return;
   }
-}
-
-// Add new object
-document.getElementById("objectForm").addEventListener("submit", async e => {
-  e.preventDefault();
-  const name = document.getElementById("name").value;
-  const price = document.getElementById("price").value;
-  const quantity = document.getElementById("quantity").value;
 
   try {
-    const res = await fetch(API_URL, {
+    await fetch("https://object-manager.onrender.com/api/objects", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, price, quantity })
+      body: JSON.stringify({ name, price })
     });
 
-    if (!res.ok) throw new Error("POST failed: " + res.status);
-
-    document.getElementById("objectForm").reset();
-    fetchObjects(); // Refresh
+    document.getElementById("nameInput").value = "";
+    document.getElementById("priceInput").value = "";
+    fetchObjects();
   } catch (err) {
-    console.error(err);
+    console.error("Error adding object:", err);
   }
-});
+}
 
-// Initial fetch
-fetchObjects();
+// ✅ Update object field (inline edit)
+async function updateObject(id, field, value) {
+  try {
+    await fetch(`https://object-manager.onrender.com/api/objects/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ [field]: value })
+    });
+    fetchObjects();
+  } catch (err) {
+    console.error("Error updating object:", err);
+  }
+}
+
+// ✅ Delete object
+async function deleteObject(id) {
+  if (!confirm("Are you sure you want to delete this object?")) return;
+
+  try {
+    await fetch(`https://object-manager.onrender.com/api/objects/${id}`, {
+      method: "DELETE"
+    });
+    fetchObjects();
+  } catch (err) {
+    console.error("Error deleting object:", err);
+  }
+}
+
+// Load objects on page load
+window.onload = fetchObjects;
 
   </script>
 </body>
 </html>
+
 
