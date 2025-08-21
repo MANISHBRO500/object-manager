@@ -8,7 +8,7 @@ const totalEl = document.getElementById("total");
 
 // GET all objects
 async function getObjects() {
-  const res = await fetch("http://localhost:5000/api/objects");
+  const res = await fetch("https://object-manager.onrender.com/api/objects");
   return await res.json();
 }
 
@@ -23,7 +23,7 @@ async function addObject(object) {
 
 // PUT update object
 async function updateObject(id, updatedObject) {
-  await fetch(`http://localhost:5000/api/objects/${id}`, {
+  await fetch(`https://object-manager.onrender.com/api/objects/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updatedObject)
@@ -32,7 +32,7 @@ async function updateObject(id, updatedObject) {
 
 // DELETE object
 async function deleteObjectAPI(id) {
-  await fetch(`http://localhost:5000/api/objects/${id}`, { method: "DELETE" });
+  await fetch(`https://object-manager.onrender.com/api/objects/${id}`, { method: "DELETE" });
 }
 
 /* =====================
@@ -98,3 +98,4 @@ async function editObject(id) {
    Initial Load
 ===================== */
 fetchAndRender();
+
