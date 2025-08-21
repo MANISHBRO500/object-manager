@@ -14,7 +14,7 @@ async function getObjects() {
 
 // POST new object
 async function addObject(object) {
-  await fetch("http://localhost:5000/api/objects", {
+  await fetch("https://object-manager.onrender.com/api/objects", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(object)
@@ -98,4 +98,5 @@ async function editObject(id) {
    Initial Load
 ===================== */
 fetchAndRender();
+
 
